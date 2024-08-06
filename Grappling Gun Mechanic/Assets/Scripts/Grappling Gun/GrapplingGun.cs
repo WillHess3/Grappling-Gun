@@ -12,6 +12,9 @@ public class GrapplingGun : MonoBehaviour {
 
     private bool _isApplyingGrappleForces;
 
+    private float _ropeLength;
+    private bool _isInTension;
+
     private void Update() {
         if (Input.GetMouseButtonDown(0)) {
             StartGrapple();
@@ -19,6 +22,8 @@ public class GrapplingGun : MonoBehaviour {
 
         if (Input.GetMouseButton(0)) {
             _isApplyingGrappleForces = true;
+
+            _isInTension = _ropeLength * _ropeLength < (_playerRigidbody.position - GrapplePoint).sqrMagnitude;
         } else {
             IsGrappling = false;
             _isApplyingGrappleForces = false;
@@ -30,6 +35,10 @@ public class GrapplingGun : MonoBehaviour {
     private void FixedUpdate() {
         if (_isApplyingGrappleForces) {
             ApplyGrappleForces();
+
+            if (Vector3.Dot(_playerRigidbody.velocity, GrapplePoint - _playerRigidbody.position) <= 0 && _ropeLength * _ropeLength < (_playerRigidbody.position - GrapplePoint).sqrMagnitude) {
+                TugPlayer();
+            }
         }
     }
 
@@ -43,18 +52,31 @@ public class GrapplingGun : MonoBehaviour {
             GrapplePoint = hit.point;
             IsGrappling = true;
             _playerMovement.enabled = false;
-
-            _playerRigidbody.velocity = Vector3.zero;
+            _ropeLength = hit.distance;
         }
     }
 
     private void ApplyGrappleForces() {
-        Vector3 displacement = GrapplePoint - _playerRigidbody.position;
-        float theta = Vector3.Angle(-displacement, Vector3.down) * Mathf.Deg2Rad;
+        Vector3 direction = (GrapplePoint - _playerRigidbody.position).normalized;
+        float theta = Vector3.Angle(-direction, Vector3.down) * Mathf.Deg2Rad;
 
-        float centripetalAcceleration = _playerRigidbody.velocity.sqrMagnitude / displacement.magnitude;
-        Vector3 tension = _playerRigidbody.mass * (centripetalAcceleration + Physics.gravity.magnitude * Mathf.Cos(theta)) * displacement.normalized;
+        float centripetalAcceleration = _playerRigidbody.velocity.sqrMagnitude / _ropeLength;
+        Vector3 tension = _playerRigidbody.mass * (centripetalAcceleration + Physics.gravity.magnitude * Mathf.Cos(theta)) * direction;
         
-        _playerRigidbody.AddForce(tension, ForceMode.Force);
+        if (Mathf.Cos(theta) < -centripetalAcceleration / Physics.gravity.magnitude) {
+            _isInTension = false;
+        }
+
+        if (_isInTension) {
+            _playerRigidbody.AddForce(tension, ForceMode.Force);
+        }
+    }
+
+    private void TugPlayer() {
+        Vector3 tangentialVelocity = Vector3.ProjectOnPlane(_playerRigidbody.velocity, (GrapplePoint - _playerRigidbody.position).normalized);
+        _playerRigidbody.velocity = tangentialVelocity;
+        _isInTension = true;
+
+        _playerRigidbody.position = GrapplePoint - (GrapplePoint - _playerRigidbody.position).normalized * _ropeLength;
     }
 }
