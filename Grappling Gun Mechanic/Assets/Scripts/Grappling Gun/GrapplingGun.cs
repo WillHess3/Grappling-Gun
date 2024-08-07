@@ -9,6 +9,9 @@ public class GrapplingGun : MonoBehaviour {
     [SerializeField] private Rigidbody _playerRigidbody;
 
     [SerializeField] private float _grappleDistance;
+    [SerializeField] private float _reelInAcceleration;
+    private float _reelInSpeed;
+    private bool _isReelingIn;
 
     private bool _isApplyingGrappleForces;
 
@@ -20,7 +23,7 @@ public class GrapplingGun : MonoBehaviour {
             StartGrapple();
         }
 
-        if (Input.GetMouseButton(0)) {
+        if (Input.GetMouseButton(0) && IsGrappling) {
             _isApplyingGrappleForces = true;
 
             _isInTension = _ropeLength * _ropeLength < (_playerRigidbody.position - GrapplePoint).sqrMagnitude;
@@ -36,8 +39,16 @@ public class GrapplingGun : MonoBehaviour {
         if (_isApplyingGrappleForces) {
             ApplyGrappleForces();
 
-            if (Vector3.Dot(_playerRigidbody.velocity, GrapplePoint - _playerRigidbody.position) <= 0 && _ropeLength * _ropeLength < (_playerRigidbody.position - GrapplePoint).sqrMagnitude) {
+            if (Vector3.Dot(_playerRigidbody.velocity, GrapplePoint - _playerRigidbody.position) <= 0 && _isInTension) {
                 TugPlayer();
+            }
+
+            if (_ropeLength > 1.5f && _isReelingIn) {
+                _reelInSpeed += _reelInAcceleration * Time.fixedDeltaTime;
+                _ropeLength -= _reelInSpeed * Time.fixedDeltaTime;
+            } else {
+                _ropeLength = 1.5f;
+                _isReelingIn = false;
             }
         }
     }
@@ -52,7 +63,9 @@ public class GrapplingGun : MonoBehaviour {
             GrapplePoint = hit.point;
             IsGrappling = true;
             _playerMovement.enabled = false;
-            _ropeLength = hit.distance;
+            _ropeLength = (GrapplePoint - _playerRigidbody.position).magnitude;
+            _isReelingIn = true;
+            _reelInSpeed = 0;
         }
     }
 
@@ -62,12 +75,13 @@ public class GrapplingGun : MonoBehaviour {
 
         float centripetalAcceleration = _playerRigidbody.velocity.sqrMagnitude / _ropeLength;
         Vector3 tension = _playerRigidbody.mass * (centripetalAcceleration + Physics.gravity.magnitude * Mathf.Cos(theta)) * direction;
-        
-        if (Mathf.Cos(theta) < -centripetalAcceleration / Physics.gravity.magnitude) {
-            _isInTension = false;
-        }
 
         if (_isInTension) {
+            if (_isReelingIn) {
+                Vector3 reelInForce = _playerRigidbody.mass * _reelInAcceleration * direction;
+                _playerRigidbody.AddForce(reelInForce, ForceMode.Force);
+            }
+
             _playerRigidbody.AddForce(tension, ForceMode.Force);
         }
     }
