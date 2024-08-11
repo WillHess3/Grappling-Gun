@@ -1,58 +1,55 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class GrappleLauncher : MonoBehaviour {
-
-    [SerializeField] private GrapplingGun _grapplingGun;
 
     [SerializeField] private float _launchSpeed;
     [SerializeField] private float _maxLaunchTime;
 
     private bool _isLaunched;
-    private float _launchTime;
+    private float _launchTimer;
 
+    private SphereCollider _sphereCollider;
     private Rigidbody _rigidbody;
-    private SphereCollider _collider;
+    private GrapplingGun _grapplingGun;
 
     private void Start() {
+        _sphereCollider = GetComponent<SphereCollider>();
         _rigidbody = GetComponent<Rigidbody>();
-        _collider = GetComponent<SphereCollider>();
+        _grapplingGun = GetComponentInParent<GrapplingGun>();
 
         _grapplingGun.GrapplePhaseChanged += OnGrapplePhaseChanged;
     }
 
-    private void OnGrapplePhaseChanged(GrapplingGun.GrapplePhase previousPhase) {
-        if (previousPhase == GrapplingGun.GrapplePhase.Waiting && _grapplingGun.CurrentGrapplePhase == GrapplingGun.GrapplePhase.Launching) {
+    private void OnGrapplePhaseChanged(GrapplingGun.GrapplePhase previousGrapplePhase) {
+        if (_grapplingGun.CurrentGrapplePhase == GrapplingGun.GrapplePhase.Launching && previousGrapplePhase == GrapplingGun.GrapplePhase.Waiting) {
             Launch();
         }
     }
 
     private void Launch() {
         _isLaunched = true;
-        _launchTime = _maxLaunchTime;
-
-        _collider.enabled = true;
+        _launchTimer = _maxLaunchTime;
+        _sphereCollider.enabled = true;
         _rigidbody.isKinematic = false;
+
         _rigidbody.AddForce(_rigidbody.mass * _launchSpeed * Camera.main.transform.forward, ForceMode.Impulse);
 
         transform.parent = null;
-
     }
 
     private void EndLaunch(bool isLaunchSuccessful) {
         _isLaunched = false;
+        _sphereCollider.enabled = false;
         _rigidbody.isKinematic = true;
-        _collider.enabled = false;
 
         _grapplingGun.LaunchFinished(isLaunchSuccessful, transform.position);
     }
 
     private void Update() {
         if (_isLaunched) {
-            _launchTime -= Time.deltaTime;
+            _launchTimer -= Time.deltaTime;
 
-            if (_launchTime < 0) {
+            if (_launchTimer < 0) {
                 EndLaunch(false);
             }
 
@@ -74,4 +71,5 @@ public class GrappleLauncher : MonoBehaviour {
     private void OnDestroy() {
         _grapplingGun.GrapplePhaseChanged -= OnGrapplePhaseChanged;
     }
+
 }

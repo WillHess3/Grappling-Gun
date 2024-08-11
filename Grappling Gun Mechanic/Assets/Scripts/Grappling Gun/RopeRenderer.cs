@@ -1,18 +1,18 @@
 using UnityEngine;
 
 public class RopeRenderer : MonoBehaviour {
-
-    private GrapplingGun _grapplingGun;
+    
     private LineRenderer _lineRenderer;
+    private GrapplingGun _grapplingGun;
     private GrappleLauncher _launcher;
 
-    private void Start () {
-        _grapplingGun = GetComponentInParent<GrapplingGun>();
+    private void Start() {
         _lineRenderer = GetComponent<LineRenderer>();
+        _grapplingGun = GetComponentInParent<GrapplingGun>();
         _launcher = _grapplingGun.GetComponentInChildren<GrappleLauncher>();
     }
 
-    private void Update () {
+    private void Update() {
         if (_grapplingGun.CurrentGrapplePhase != GrapplingGun.GrapplePhase.Waiting) {
             if (!_lineRenderer.enabled) {
                 _lineRenderer.enabled = true;
@@ -21,9 +21,7 @@ public class RopeRenderer : MonoBehaviour {
             _lineRenderer.SetPosition(0, transform.position);
             _lineRenderer.SetPosition(1, _launcher.transform.position);
         } else {
-            if (_lineRenderer.enabled) {
-                _lineRenderer.enabled = false;
-            }
+            _lineRenderer.enabled = false;
         }
     }
 

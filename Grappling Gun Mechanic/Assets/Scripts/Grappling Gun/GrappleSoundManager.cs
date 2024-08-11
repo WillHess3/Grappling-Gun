@@ -9,16 +9,16 @@ public class GrappleSoundManager : MonoBehaviour {
     private GrapplingGun _grapplingGun;
     private AudioSource _audioSource;
 
-    private bool _isWaitingForStickSoundToFinish;
+    private bool _isWaintingForStickSoundToEnd;
 
-    private void Start() {
+    private void Start () {
         _grapplingGun = GetComponent<GrapplingGun>();
         _audioSource = GetComponent<AudioSource>();
 
         _grapplingGun.GrapplePhaseChanged += OnGrapplePhaseChanged;
     }
 
-    private void OnGrapplePhaseChanged(GrapplingGun.GrapplePhase previousPhase) {
+    private void OnGrapplePhaseChanged(GrapplingGun.GrapplePhase previousPhase) { 
         if (_grapplingGun.CurrentGrapplePhase == GrapplingGun.GrapplePhase.Launching && previousPhase == GrapplingGun.GrapplePhase.Waiting) {
             PlayLaunchSound();
         } else if (_grapplingGun.CurrentGrapplePhase == GrapplingGun.GrapplePhase.Grappling && previousPhase == GrapplingGun.GrapplePhase.Launching) {
@@ -45,7 +45,7 @@ public class GrappleSoundManager : MonoBehaviour {
         _audioSource.loop = false;
         _audioSource.Play();
 
-        _isWaitingForStickSoundToFinish = true;
+        _isWaintingForStickSoundToEnd = true;
     }
 
     private void PlayReelInSound() {
@@ -57,8 +57,8 @@ public class GrappleSoundManager : MonoBehaviour {
     }
 
     private void Update() {
-        if (_isWaitingForStickSoundToFinish && !_audioSource.isPlaying) {
-            _isWaitingForStickSoundToFinish = false;
+        if (_isWaintingForStickSoundToEnd && !_audioSource.isPlaying) {
+            _isWaintingForStickSoundToEnd = false;
             PlayReelInSound();
         }
     }
